@@ -28,6 +28,8 @@ interface UtmData {
   utm_campaign?: string | null;
   utm_term?: string | null;
   utm_content?: string | null;
+  gclid?: string | null;
+  fbclid?: string | null;
   referrer?: string | null;
 }
 
@@ -40,6 +42,8 @@ function readUtm(): UtmData {
     utm_campaign: p.get("utm_campaign"),
     utm_term: p.get("utm_term"),
     utm_content: p.get("utm_content"),
+    gclid: p.get("gclid"),
+    fbclid: p.get("fbclid"),
     referrer: document.referrer || null,
   };
 }

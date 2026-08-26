@@ -18,6 +18,9 @@ export interface LeadInput {
   utm_campaign?: string | null;
   utm_term?: string | null;
   utm_content?: string | null;
+  /** Identificadores de clique de anúncio (Google Ads e Meta Ads). */
+  gclid?: string | null;
+  fbclid?: string | null;
   referrer?: string | null;
   user_agent?: string | null;
 }

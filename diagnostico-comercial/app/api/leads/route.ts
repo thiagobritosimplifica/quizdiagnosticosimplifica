@@ -80,6 +80,8 @@ export async function POST(request: Request) {
     utm_campaign: str(utm.utm_campaign, 200),
     utm_term: str(utm.utm_term, 200),
     utm_content: str(utm.utm_content, 200),
+    gclid: str(utm.gclid, 300),
+    fbclid: str(utm.fbclid, 300),
     referrer: str(utm.referrer, 500),
     user_agent: request.headers.get("user-agent")?.slice(0, 400) ?? null,
   };

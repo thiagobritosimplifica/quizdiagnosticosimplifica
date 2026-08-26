@@ -115,8 +115,11 @@ Copie `.env.example` para `.env.local` e preencha:
 | `SHEETS_SECRET` | sim, em produção | O mesmo `SEGREDO` definido no Apps Script |
 | `NEXT_PUBLIC_BRAND_NAME` | não | Nome usado nos textos (padrão `Simplifica`) |
 | `NEXT_PUBLIC_CTA_URL` | **sim, na prática** | Link do botão final. Hoje está com um número de exemplo — troque pelo WhatsApp real |
-| `LEAD_WEBHOOK_URL` | não | Envia cada lead também para CRM/automação (várias URLs separadas por vírgula) |
+| `N8N_WEBHOOK_URL` | não | Webhook do n8n, no formato do Respondi (ver seção 6) |
+| `LEAD_WEBHOOK_URL` | não | Webhook em formato nativo, para CRM/automação |
 | `LEAD_WEBHOOK_SECRET` | não | Enviado no header `X-Webhook-Secret` |
+| `WEBHOOK_FORM_NAME` | não | Nome do formulário no payload do webhook |
+| `WEBHOOK_FORM_ID` | não | Identificador do formulário no payload |
 
 Gerar um `ADMIN_SESSION_SECRET`:
 
@@ -126,16 +129,57 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ---
 
-## 4. Publicar (Vercel)
+## 4. Publicar
 
-1. Suba a pasta `diagnostico-comercial` para um repositório Git.
-2. Importe o repositório na Vercel.
-3. Em **Settings → Environment Variables**, cadastre as variáveis acima.
-4. Deploy.
+### EasyPanel (Docker)
+
+O projeto já traz um [`Dockerfile`](Dockerfile) em três estágios, gerando uma
+imagem enxuta com a saída `standalone` do Next.js, rodando sem root e com
+healthcheck na porta 3000.
+
+No EasyPanel, crie um App do tipo **Dockerfile** apontando para o repositório:
+
+| Campo | Valor |
+|---|---|
+| Build path / contexto | `diagnostico-comercial` |
+| Dockerfile | `Dockerfile` |
+| Porta | `3000` |
+
+**Build Arguments** (obrigatórios — entram no código na compilação):
+
+```
+NEXT_PUBLIC_BRAND_NAME=Simplifica
+NEXT_PUBLIC_CTA_URL=https://wa.me/SEUNUMERO?text=...
+```
+
+**Environment Variables** (lidas ao rodar):
+
+```
+ADMIN_PASSWORD=...
+ADMIN_SESSION_SECRET=...
+SHEETS_WEBAPP_URL=...
+SHEETS_SECRET=...
+N8N_WEBHOOK_URL=...
+```
+
+> A diferença entre as duas listas importa: trocar `NEXT_PUBLIC_CTA_URL` exige
+> **rebuild** da imagem, não só reiniciar o contêiner. As demais valem no restart.
+
+Construir a imagem localmente, se quiser testar antes:
+
+```bash
+docker build -t diagnostico-comercial --build-arg NEXT_PUBLIC_CTA_URL="https://wa.me/SEUNUMERO" .
+```
+
+### Vercel
+
+Alternativa sem Docker: importe o repositório, defina o Root Directory como
+`diagnostico-comercial` e cadastre as mesmas variáveis em
+**Settings → Environment Variables**.
 
 Como o armazenamento é a planilha, não há banco para provisionar. O fallback
-`.data/leads.json` **não funciona na Vercel** (sistema de arquivos somente leitura),
-então `SHEETS_WEBAPP_URL` precisa estar preenchida em produção.
+`.data/leads.json` **não funciona em produção** (sistema de arquivos efêmero),
+então `SHEETS_WEBAPP_URL` precisa estar preenchida.
 
 ---
 
@@ -162,13 +206,58 @@ ao trocar de filtro. Um lead novo limpa o cache na hora.
 
 ## 6. Integrações
 
-Todo lead gravado passa por `lib/integrations.ts`, que faz um `POST` JSON para as
-URLs em `LEAD_WEBHOOK_URL` — CRM, n8n/Make/Zapier, disparo de WhatsApp, automação
-de marketing. Falhas ali **nunca** derrubam o cadastro do lead.
+### n8n (formato Respondi)
+
+`N8N_WEBHOOK_URL` recebe um `POST` com a **mesma estrutura que o Respondi envia**,
+para reaproveitar fluxos já montados no n8n:
+
+```json
+{
+  "form": { "form_name": "...", "form_id": "..." },
+  "respondent": {
+    "status": "completed",
+    "date": "2026-08-26 12:00:12",
+    "score": 38,
+    "respondent_id": "uuid do lead",
+    "answers": { "<título da pergunta>": "<resposta>" },
+    "raw_answers": [ { "question": { "question_title", "question_id", "question_type" }, "answer" } ],
+    "respondent_utms": { "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid" }
+  },
+  "diagnostico": { "score", "max_score", "tier_id", "tier_label", "respostas", "referrer" }
+}
+```
+
+Os `question_id` são estáveis — mapeie por eles, não pelo título:
+
+| `question_id` | Campo |
+|---|---|
+| `nome` | Nome (texto) |
+| `telefone` | WhatsApp — `{ "country": "55", "phone": "31985181164" }` |
+| `email` | E-mail |
+| `instagram` | Instagram |
+| `cargo` | Cargo (array com um item) |
+| `faturamento` | Faturamento (array com um item) |
+| `p1` … `p10` | As 10 perguntas do diagnóstico (array com um item) |
+
+O bloco `diagnostico` é um extra fora do formato do Respondi, com a pontuação,
+a classificação e as 10 respostas detalhadas com os pontos de cada uma.
+
+O nome do formulário pode ser trocado com `WEBHOOK_FORM_NAME` e `WEBHOOK_FORM_ID`.
+
+### Outros destinos
+
+`LEAD_WEBHOOK_URL` recebe um payload nativo, mais simples
+(`{ event, source, sent_at, lead }`), para CRM, Make/Zapier ou automação de
+marketing. As duas variáveis aceitam **várias URLs separadas por vírgula**.
+
+Os envios acontecem depois que a pessoa já viu o resultado, com uma segunda
+tentativa em caso de falha. Nada disso derruba o cadastro do lead nem a
+gravação na planilha — erros só vão para o log.
 
 **Meta Ads / Google Ads:** `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`,
-`utm_content` e o `referrer` são capturados da URL automaticamente e vão para a
-planilha junto com o lead. Basta usar links com UTM nos anúncios.
+`utm_content`, além de `gclid` e `fbclid`, são capturados da URL automaticamente.
+Os UTMs vão para a planilha e para os webhooks; `gclid` e `fbclid` vão apenas
+para os webhooks, por serem úteis em tempo real na atribuição de anúncios.
 
 ---
 
@@ -228,12 +317,14 @@ components/
   AdminDashboard.tsx        Painel
   ScoreGauge.tsx            Medidor animado da pontuação
   BrandMark.tsx             Logo
+Dockerfile                  Imagem de produção (EasyPanel, Docker)
 lib/
   questions.ts scoring.ts   Regras do diagnóstico
   profile.ts                Cargo e faturamento
   db.ts                     Google Sheets (ou arquivo local em dev)
   auth.ts validation.ts     Sessão e validações
-  integrations.ts           Webhooks para CRM e automação
+  integrations.ts           Envio para n8n e outros webhooks
+  webhook-payload.ts        Payload no formato do Respondi
 google-sheets/
   Codigo.gs                 API da planilha (Apps Script)
 ```
