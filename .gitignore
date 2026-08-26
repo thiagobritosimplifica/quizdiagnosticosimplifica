@@ -1,0 +1,17 @@
+# dependencias e build
+node_modules/
+.next/
+out/
+
+# variaveis de ambiente (contem senhas e segredos)
+.env
+.env.local
+.env.*.local
+
+# dados do fallback local
+.data/
+
+# sistema
+.DS_Store
+Thumbs.db
+desktop.ini

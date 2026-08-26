@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "diagnostico-comercial",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--prefix", "diagnostico-comercial"],
+      "port": 3000
+    },
+    {
+      "name": "diagnostico-comercial-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "diagnostico-comercial"],
+      "port": 3001
+    }
+  ]
+}
