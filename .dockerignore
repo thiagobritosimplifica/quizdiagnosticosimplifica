@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/.data
+**/.env
+**/.env.local
+**/.env.*.local
+.git
+.claude
+**/.claude
+*.md
+**/*.md
+Dockerfile
+.dockerignore
+**/npm-debug.log*

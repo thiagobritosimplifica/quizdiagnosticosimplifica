@@ -1,6 +1,9 @@
 # ---------------------------------------------------------------
 # Diagnóstico do Atendimento Comercial — imagem de produção
 #
+# O contexto de build é a RAIZ do repositório; a aplicação fica em
+# diagnostico-comercial/. É assim que o EasyPanel monta por padrão.
+#
 # IMPORTANTE: as variáveis NEXT_PUBLIC_* entram no código durante a
 # COMPILAÇÃO, não na hora de rodar. Elas precisam ser passadas como
 # build args (no EasyPanel: aba Build > Build Arguments). As demais
@@ -10,7 +13,7 @@
 # ---------- 1. Dependências ----------
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY diagnostico-comercial/package.json diagnostico-comercial/package-lock.json ./
 RUN npm ci
 
 # ---------- 2. Compilação ----------
@@ -24,7 +27,7 @@ ENV NEXT_PUBLIC_CTA_URL=$NEXT_PUBLIC_CTA_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY diagnostico-comercial/ ./
 RUN npm run build
 
 # ---------- 3. Execução ----------

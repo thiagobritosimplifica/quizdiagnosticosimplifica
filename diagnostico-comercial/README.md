@@ -133,15 +133,18 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### EasyPanel (Docker)
 
-O projeto já traz um [`Dockerfile`](Dockerfile) em três estágios, gerando uma
+O projeto já traz um [`Dockerfile`](../Dockerfile) em três estágios, gerando uma
 imagem enxuta com a saída `standalone` do Next.js, rodando sem root e com
 healthcheck na porta 3000.
+
+O `Dockerfile` fica na **raiz do repositório** (não dentro de
+`diagnostico-comercial/`), que é onde o EasyPanel procura por padrão.
 
 No EasyPanel, crie um App do tipo **Dockerfile** apontando para o repositório:
 
 | Campo | Valor |
 |---|---|
-| Build path / contexto | `diagnostico-comercial` |
+| Build path / contexto | `/` (raiz do repositório) |
 | Dockerfile | `Dockerfile` |
 | Porta | `3000` |
 
@@ -168,6 +171,7 @@ N8N_WEBHOOK_URL=...
 Construir a imagem localmente, se quiser testar antes:
 
 ```bash
+# a partir da raiz do repositório
 docker build -t diagnostico-comercial --build-arg NEXT_PUBLIC_CTA_URL="https://wa.me/SEUNUMERO" .
 ```
 
@@ -317,7 +321,6 @@ components/
   AdminDashboard.tsx        Painel
   ScoreGauge.tsx            Medidor animado da pontuação
   BrandMark.tsx             Logo
-Dockerfile                  Imagem de produção (EasyPanel, Docker)
 lib/
   questions.ts scoring.ts   Regras do diagnóstico
   profile.ts                Cargo e faturamento
