@@ -17,6 +17,9 @@ type Step = "hero" | "quiz" | "lead" | "result";
 type Answers = Record<string, OptionId>;
 
 const STORAGE_KEY = "simplifica:diagnostico:v1";
+const UTM_KEY = "simplifica:utm:v1";
+/** Atribuição guardada por 30 dias, para sobreviver a recarregamentos. */
+const UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Respostas guardadas no navegador valem por 24h — depois disso o quiz recomeça. */
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 const CTA_URL = process.env.NEXT_PUBLIC_CTA_URL || "https://wa.me/5511999999999";
@@ -33,10 +36,19 @@ interface UtmData {
   referrer?: string | null;
 }
 
+/**
+ * Lê a origem do tráfego da URL e guarda no navegador.
+ *
+ * Sem isso, a atribuição se perde se a pessoa recarregar a página, voltar
+ * pelo histórico ou abrir o link de novo sem os parâmetros — situações
+ * comuns em campanha e que apagariam a origem de um lead já pago.
+ */
 function readUtm(): UtmData {
   if (typeof window === "undefined") return {};
+
   const p = new URLSearchParams(window.location.search);
-  return {
+  const referrer = document.referrer || null;
+  const daUrl: UtmData = {
     utm_source: p.get("utm_source"),
     utm_medium: p.get("utm_medium"),
     utm_campaign: p.get("utm_campaign"),
@@ -44,8 +56,42 @@ function readUtm(): UtmData {
     utm_content: p.get("utm_content"),
     gclid: p.get("gclid"),
     fbclid: p.get("fbclid"),
-    referrer: document.referrer || null,
+    referrer,
   };
+
+  const temOrigemNaUrl = Object.entries(daUrl).some(
+    ([chave, valor]) => chave !== "referrer" && Boolean(valor),
+  );
+
+  // Chegou com origem: essa é a atribuição válida e passa a valer daqui pra frente.
+  if (temOrigemNaUrl) {
+    try {
+      window.localStorage.setItem(
+        UTM_KEY,
+        JSON.stringify({ dados: daUrl, savedAt: Date.now() }),
+      );
+    } catch {
+      /* localStorage indisponível — segue sem guardar */
+    }
+    return daUrl;
+  }
+
+  // Sem origem na URL: recupera a última conhecida, se ainda estiver válida.
+  try {
+    const raw = window.localStorage.getItem(UTM_KEY);
+    if (raw) {
+      const salvo = JSON.parse(raw) as { dados?: UtmData; savedAt?: number };
+      if (salvo.savedAt && Date.now() - salvo.savedAt < UTM_TTL_MS && salvo.dados) {
+        // O referrer é sempre o desta visita, não o guardado.
+        return { ...salvo.dados, referrer };
+      }
+      window.localStorage.removeItem(UTM_KEY);
+    }
+  } catch {
+    /* ignora */
+  }
+
+  return daUrl;
 }
 
 export default function Diagnostico() {
