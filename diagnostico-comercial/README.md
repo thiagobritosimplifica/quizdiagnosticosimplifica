@@ -114,7 +114,7 @@ Copie `.env.example` para `.env.local` e preencha:
 | `SHEETS_WEBAPP_URL` | sim, em produção | URL `/exec` do Web App do Apps Script |
 | `SHEETS_SECRET` | sim, em produção | O mesmo `SEGREDO` definido no Apps Script |
 | `NEXT_PUBLIC_BRAND_NAME` | não | Nome usado nos textos (padrão `Simplifica`) |
-| `NEXT_PUBLIC_CTA_URL` | **sim, na prática** | Link do botão final. Hoje está com um número de exemplo — troque pelo WhatsApp real |
+| `NEXT_PUBLIC_CTA_URL` | não | Link do botão final. Padrão: a agenda do Calendly da Simplifica |
 | `N8N_WEBHOOK_URL` | não | Webhook do n8n, no formato do Respondi (ver seção 6) |
 | `LEAD_WEBHOOK_URL` | não | Webhook em formato nativo, para CRM/automação |
 | `LEAD_WEBHOOK_SECRET` | não | Enviado no header `X-Webhook-Secret` |
@@ -152,7 +152,7 @@ No EasyPanel, crie um App do tipo **Dockerfile** apontando para o repositório:
 
 ```
 NEXT_PUBLIC_BRAND_NAME=Simplifica
-NEXT_PUBLIC_CTA_URL=https://wa.me/SEUNUMERO?text=...
+NEXT_PUBLIC_CTA_URL=https://calendly.com/simplificamktdigital/diagnostico-marketing-vendas
 ```
 
 **Environment Variables** (lidas ao rodar):
@@ -172,7 +172,7 @@ Construir a imagem localmente, se quiser testar antes:
 
 ```bash
 # a partir da raiz do repositório
-docker build -t diagnostico-comercial --build-arg NEXT_PUBLIC_CTA_URL="https://wa.me/SEUNUMERO" .
+docker build -t diagnostico-comercial --build-arg NEXT_PUBLIC_CTA_URL="https://calendly.com/..." .
 ```
 
 ### Vercel

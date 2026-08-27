@@ -22,7 +22,9 @@ const UTM_KEY = "simplifica:utm:v1";
 const UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Respostas guardadas no navegador valem por 24h — depois disso o quiz recomeça. */
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
-const CTA_URL = process.env.NEXT_PUBLIC_CTA_URL || "https://wa.me/5511999999999";
+const CTA_URL =
+  process.env.NEXT_PUBLIC_CTA_URL ||
+  "https://calendly.com/simplificamktdigital/diagnostico-marketing-vendas";
 const BRAND = process.env.NEXT_PUBLIC_BRAND_NAME || "Simplifica";
 
 interface UtmData {
@@ -774,7 +776,7 @@ export default function Diagnostico() {
             Quero melhorar meu atendimento
           </a>
           <p className="mt-5 text-xs text-mist-500">
-            Nossa equipe entra em contato pelo WhatsApp informado.
+            Você escolhe o dia e o horário na nossa agenda.
           </p>
         </section>
 
