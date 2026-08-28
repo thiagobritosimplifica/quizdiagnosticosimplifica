@@ -144,6 +144,8 @@ export function buildRespondiPayload(lead: Lead) {
     // Campos extras do diagnóstico, fora do formato do Respondi.
     diagnostico: {
       score: lead.score,
+      // Soma real das respostas, sem o teto aplicado no diagnóstico.
+      score_bruto: lead.score_bruto ?? lead.score,
       max_score: 40,
       tier_id: lead.tier_id,
       tier_label: lead.tier_label,

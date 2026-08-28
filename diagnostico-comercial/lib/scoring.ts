@@ -2,6 +2,13 @@ import { MAX_SCORE, QUESTIONS, type OptionId, type Question } from "./questions"
 
 export type TierId = "vazando" | "reativo" | "estruturado" | "maquina";
 
+/**
+ * Teto da pontuação exibida. Nenhum diagnóstico passa disso, mesmo que a
+ * soma das respostas seja maior. A soma original continua disponível em
+ * ValidationResult.rawScore, para não perder a diferenciação interna.
+ */
+export const SCORE_CAP = 30;
+
 export interface Tier {
   id: TierId;
   emoji: string;
@@ -83,7 +90,10 @@ export interface ValidationResult {
   ok: boolean;
   errors: string[];
   answers: ScoredAnswer[];
+  /** Pontuação já com o teto aplicado — é a que vale em todo o resto. */
   score: number;
+  /** Soma real das respostas, sem teto. Uso interno. */
+  rawScore: number;
 }
 
 /**
@@ -112,8 +122,9 @@ export function scoreAnswers(raw: unknown): ValidationResult {
     });
   }
 
-  const score = answers.reduce((sum, a) => sum + a.points, 0);
-  return { ok: errors.length === 0, errors, answers, score };
+  const rawScore = answers.reduce((sum, a) => sum + a.points, 0);
+  const score = Math.min(rawScore, SCORE_CAP);
+  return { ok: errors.length === 0, errors, answers, score, rawScore };
 }
 
 /** Os pontos mais fracos do atendimento — usados na seção "principais gargalos". */

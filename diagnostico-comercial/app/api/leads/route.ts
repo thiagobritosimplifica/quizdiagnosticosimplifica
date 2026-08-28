@@ -73,6 +73,7 @@ export async function POST(request: Request) {
     consent: true,
     answers: scored.answers,
     score: scored.score,
+    score_bruto: scored.rawScore,
     tier_id: tier.id,
     tier_label: tier.label,
     utm_source: str(utm.utm_source, 120),

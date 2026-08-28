@@ -10,6 +10,8 @@ export interface LeadInput {
   consent: boolean;
   answers: ScoredAnswer[];
   score: number;
+  /** Soma real das respostas, antes do teto. Não aparece no diagnóstico. */
+  score_bruto?: number;
   tier_id: TierId;
   tier_label: string;
   /** Origem de tráfego — preparado para Meta Ads / Google Ads. */
