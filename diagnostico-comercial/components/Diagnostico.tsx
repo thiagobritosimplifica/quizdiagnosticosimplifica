@@ -722,7 +722,7 @@ export default function Diagnostico() {
                       {item.pillar}
                     </span>
                     <span className="chip px-2.5 py-1 text-[11px] tabular-nums text-mist-400">
-                      {item.points}/4
+                      {item.display_points}/4
                     </span>
                   </div>
                   <p className="mt-2 text-[13px] leading-relaxed text-mist-400">
@@ -747,12 +747,12 @@ export default function Diagnostico() {
                     <span
                       key={level}
                       className="h-2 flex-1 rounded-full"
-                      style={{ background: barColor(level, answer.points) }}
+                      style={{ background: barColor(level, answer.display_points) }}
                     />
                   ))}
                 </span>
                 <span className="w-6 flex-shrink-0 text-right text-[13px] tabular-nums text-mist-500">
-                  {answer.points}
+                  {answer.display_points}
                 </span>
               </li>
             ))}

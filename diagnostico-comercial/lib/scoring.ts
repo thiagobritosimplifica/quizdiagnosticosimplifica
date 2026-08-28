@@ -83,7 +83,10 @@ export interface ScoredAnswer {
   pillar: string;
   answer_id: OptionId;
   answer_label: string;
+  /** Pontos reais da alternativa escolhida. Uso interno. */
   points: number;
+  /** Pontos mostrados na radiografia — somam exatamente a nota exibida. */
+  display_points: number;
 }
 
 export interface ValidationResult {
@@ -119,19 +122,48 @@ export function scoreAnswers(raw: unknown): ValidationResult {
       answer_id: option.id,
       answer_label: option.label,
       points: option.points,
+      display_points: option.points,
     });
   }
 
   const rawScore = answers.reduce((sum, a) => sum + a.points, 0);
   const score = Math.min(rawScore, SCORE_CAP);
+  distribuirTeto(answers, score);
   return { ok: errors.length === 0, errors, answers, score, rawScore };
+}
+
+/**
+ * Ajusta os pontos por pilar para que a soma bata com a nota exibida.
+ *
+ * Sem isso, uma nota travada em 30 apareceria ao lado de dez pilares com 4/4,
+ * que somam 40. O desconto sai sempre dos pilares mais altos, um ponto por
+ * vez, então os mais fracos continuam sendo os mais fracos.
+ */
+function distribuirTeto(answers: ScoredAnswer[], scoreExibido: number): void {
+  let excesso = answers.reduce((sum, a) => sum + a.points, 0) - scoreExibido;
+  if (excesso <= 0) return;
+
+  while (excesso > 0) {
+    const maior = Math.max(...answers.map((a) => a.display_points));
+    if (maior <= 1) break; // não dá para descontar mais
+
+    for (const answer of answers) {
+      if (excesso === 0) break;
+      if (answer.display_points === maior) {
+        answer.display_points -= 1;
+        excesso -= 1;
+      }
+    }
+  }
 }
 
 /** Os pontos mais fracos do atendimento — usados na seção "principais gargalos". */
 export function findBottlenecks(answers: ScoredAnswer[], limit = 3): ScoredAnswer[] {
   return [...answers]
-    .sort((a, b) => a.points - b.points || a.question_id - b.question_id)
-    .filter((a) => a.points <= 3)
+    .sort(
+      (a, b) => a.display_points - b.display_points || a.question_id - b.question_id,
+    )
+    .filter((a) => a.display_points <= 3)
     .slice(0, limit);
 }
 
